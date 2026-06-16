@@ -1,6 +1,6 @@
 use eframe::egui;
 
-use crate::{formats::{Format, pe::PE, macho::MachO}, ui::viewer::SidebarItem};
+use crate::{formats::{Format, pe::PE, macho::MachO, elf::ELF}, ui::viewer::SidebarItem};
 
 pub struct App {
     pub file_path: Option<String>,
@@ -8,6 +8,7 @@ pub struct App {
     pub format: Option<Format>,
     pub pe: Option<PE>,
     pub macho: Option<MachO>,
+    pub elf: Option<ELF>,
     pub selected_view: SidebarItem,
     pub strings: Vec<(usize, String)>,
     pub string_filter: String,
@@ -18,6 +19,8 @@ pub struct App {
     pub hash_md5: String,
     pub hash_sha1: String,
     pub hash_sha256: String,
+    pub instructions: Vec<crate::tools::Instruction>,
+    pub disasm_filter: String,
 }
 
 impl Default for App {
@@ -28,6 +31,7 @@ impl Default for App {
             format: None,
             pe: None,
             macho: None,
+            elf: None,
             selected_view: SidebarItem::default(),
             strings: Vec::new(),
             string_filter: String::new(),
@@ -38,6 +42,8 @@ impl Default for App {
             hash_md5: String::new(),
             hash_sha1: String::new(),
             hash_sha256: String::new(),
+            instructions: Vec::new(),
+            disasm_filter: String::new(),
         }
     }
 }

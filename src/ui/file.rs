@@ -1,5 +1,5 @@
 use eframe::egui;
-use crate::{formats::{Format, detect_format, pe::parse_pe, raw::open_file, macho::parse_macho}, ui::app::App};
+use crate::{formats::{Format, detect_format, pe::parse_pe, raw::open_file, macho::parse_macho, elf::parse_elf}, ui::app::App};
 
 pub fn show(app: &mut App, ctx: &egui::Context) {
     egui::CentralPanel::default().show(ctx, |ui| {
@@ -49,17 +49,105 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                                 match app.format {
                                     Some(Format::PE) => {
                                         match parse_pe(&bytes) {
-                                            Ok(pe) => app.pe = Some(pe),
+                                            Ok(pe) => {
+                                                // buscar seccion ejecutable
+                                                match &pe {
+                                                    crate::formats::pe::PE::PE64(pe64) => {
+                                                        for section in &pe64.sections {
+                                                            if section.characteristics & 0x20000000 != 0 {
+                                                                let start = section.pointer_to_raw_data as usize;
+                                                                let end = start + section.size_of_raw_data as usize;
+                                                                app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes[start..end]);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    crate::formats::pe::PE::PE32(pe32) => {
+                                                        for section in &pe32.sections {
+                                                            if section.characteristics & 0x20000000 != 0 {
+                                                                let start = section.pointer_to_raw_data as usize;
+                                                                let end = start + section.size_of_raw_data as usize;
+                                                                app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes[start..end]);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                app.pe = Some(pe);
+                                            }
                                             Err(e) => eprintln!("Error parsing PE: {}", e),
+                                        }
+                                    }
+                                    Some(Format::ELF) => {
+                                        match parse_elf(&bytes) {
+                                            Ok(elf) => {
+                                                // buscar seccion ejecutable
+                                                match &elf {
+                                                    crate::formats::elf::ELF::ELF64(elf64) => {
+                                                        for section in &elf64.sections {
+                                                            if section.sh_flags & 0x04 != 0 {
+                                                                let start = section.sh_offset as usize;
+                                                                let end = start + section.sh_size as usize;
+                                                                app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes[start..end]);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    crate::formats::elf::ELF::ELF32(elf32) => {
+                                                        for section in &elf32.sections {
+                                                            if section.sh_flags & 0x04 != 0 {
+                                                                let start = section.sh_offset as usize;
+                                                                let end = start + section.sh_size as usize;
+                                                                app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes[start..end]);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                app.elf = Some(elf);
+                                            }
+                                            Err(e) => eprintln!("Error parsing ELF: {}", e),
                                         }
                                     }
                                     Some(Format::MachO) => {
                                         match parse_macho(&bytes) {
-                                            Ok(m) => app.macho = Some(m),
+                                            Ok(macho) => {
+                                                // buscar seccion ejecutable (__text)
+                                                match &macho {
+                                                    crate::formats::macho::MachO::MachO64(macho64) => {
+                                                        for segment in &macho64.segments {
+                                                            for section in &segment.sections {
+                                                                if section.sect_name.starts_with(b"__text") {
+                                                                    let start = section.offset as usize;
+                                                                    let end = start + section.size as usize;
+                                                                    app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes[start..end]);
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    crate::formats::macho::MachO::MachO32(macho32) => {
+                                                        for segment in &macho32.segments {
+                                                            for section in &segment.sections {
+                                                                if section.sect_name.starts_with(b"__text") {
+                                                                    let start = section.offset as usize;
+                                                                    let end = start + section.size as usize;
+                                                                    app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes[start..end]);
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                app.macho = Some(macho);
+                                            }
                                             Err(e) => eprintln!("Error parsing Mach-O: {}", e),
                                         }
                                     }
-                                    _ => {}
+                                    _ => {
+                                        // Raw binary: disassemble entire thing
+                                        app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes);
+                                    }
                                 }
 
                                 // Compute file hashes
@@ -86,6 +174,9 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
 
                                 // Extract strings
                                 app.strings = crate::tools::strings::string_scanner(&bytes);
+
+                                // Run disassembler
+                                //app.instructions = crate::tools::disassembler::disassemble_bytes(&bytes);
 
                                 // Store binary data (last, after all reads)
                                 app.binary_data = Some(bytes);
