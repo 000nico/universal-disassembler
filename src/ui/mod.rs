@@ -10,6 +10,7 @@ pub mod headers;
 pub mod sections;
 pub mod imports;
 pub mod exports;
+pub mod entropy_view;
 
 use eframe::egui;
 use crate::ui::app::App;

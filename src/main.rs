@@ -13,7 +13,7 @@ fn main() {
     };
 
     eframe::run_native(
-        "Decompiler",
+        "UD - Universal Decompiler",
         options,
         Box::new(|_| Ok(Box::new(App::default()))),
     ).unwrap();

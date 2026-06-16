@@ -2,6 +2,8 @@
 pub mod raw;
 pub mod pe;
 pub mod elf;
+#[path = "mach-o.rs"]
+pub mod macho;
 
 // shared variables
 #[derive(Debug)]
