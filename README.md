@@ -10,7 +10,7 @@ The goal of this project is to create a lightweight multi-format binary analyzer
 
 - [x] PE (Windows)
 - [x] ELF (Linux)
-- [ ] Mach-O (macOS)
+- [x] Mach-O (macOS)
 - [x] Raw binary fallback
 
 If the file format cannot be identified, it will be loaded as a raw binary.
@@ -19,8 +19,8 @@ If the file format cannot be identified, it will be loaded as a raw binary.
 
 ### Analysis
 
-- [ ] Disassembler (Capstone powered)
-- [ ] Entropy analysis
+- [x] Disassembler (Capstone powered)
+- [x] Entropy analysis
 - [x] Pattern scanner
   - [x] Hex pattern support
   - [x] Wildcards (`??`)
@@ -48,7 +48,9 @@ If the file format cannot be identified, it will be loaded as a raw binary.
 
 ## Screenshots
 
-Coming soon.
+![Overview](images/ud1.PNG)
+![Disassembly](images/ud2.PNG)
+![Analysis](images/ud3.PNG)
 
 ## Purpose
 
